@@ -43,11 +43,11 @@ class Consumer(Thread):
             cart_id = self._marketplace.new_cart()
 
             for event in cart:
-                fn_action = self._marketplace.add_to_cart if event['type'] == "add" \
+                fn_action = self._marketplace.add_to_cart if event['type'] == 'add' \
                     else self._marketplace.remove_from_cart
 
                 for _ in range(event['quantity']):
                     while not fn_action(cart_id, event['product']):
                         time.sleep(self._retry_wait_time)
 
-            self._marketplace.place_order(cart)
+            self._marketplace.place_order(cart_id)
