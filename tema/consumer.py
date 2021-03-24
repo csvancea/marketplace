@@ -43,6 +43,9 @@ class Consumer(Thread):
             cart_id = self._marketplace.new_cart()
 
             for event in cart:
+                # "pointer*" to add or remove depending on the action
+                # (both functions take the same arguments, so they are interchangeable)
+                # (* it's not a pointer but I don't know how they're called in Python)
                 fn_action = self._marketplace.add_to_cart if event['type'] == 'add' \
                     else self._marketplace.remove_from_cart
 

@@ -24,15 +24,23 @@ class Marketplace:
 
         self._queue_size_per_producer = queue_size_per_producer
 
+        # Producers are stored here
+        # Lock needed to increment/decrement producers count atomically
         self._producers = {}
         self._producers_cnt = 0
         self._register_lock = Lock()
 
+        # Carts are stored here
+        # Lock needed to increment/decrement carts count atomically
         self._carts = {}
         self._carts_cnt = 0
         self._new_cart_lock = Lock()
 
+        # All published products are stored here
         self._store = []
+
+        # Map a product to its producer
+        # (needed because products from all producers are stored in a the same list)
         self._product_to_producer = {}
 
     def register_producer(self):
@@ -43,6 +51,9 @@ class Marketplace:
         with self._register_lock:
             producer_id = self._producers_cnt
             self._producers_cnt += 1
+
+        # previous lock assures me that producer_id is an unique value
+        # (2 parallel register_producer calls can't return the same id)
 
         self._producers[producer_id] = {}
         self._producers[producer_id]['count'] = 0
@@ -63,12 +74,17 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again.
         """
 
+        # Make sure the producer queue isn't full
+        # While only 1 thread can publish products, multiple threads (consumers)
+        # can consume products, so a lock is needed
         with self._producers[producer_id]['lock']:
             if self._producers[producer_id]['count'] == self._queue_size_per_producer:
                 return False
 
+            # Increment the product count for producer_id
             self._producers[producer_id]['count'] += 1
 
+        # No sync needed
         self._product_to_producer[product] = producer_id
         self._store.append(product)
 
@@ -84,6 +100,9 @@ class Marketplace:
         with self._new_cart_lock:
             cart_id = self._carts_cnt
             self._carts_cnt += 1
+
+        # previous lock assures me that cart_id is an unique value
+        # (2 parallel new_cart calls can't return the same id)
 
         self._carts[cart_id] = {}
         self._carts[cart_id]['store'] = []
@@ -111,9 +130,14 @@ class Marketplace:
             # Product not found in store
             return False
 
+        # Atomically decrease the product count of producer
+
         producer_id = self._product_to_producer[product]
         with self._producers[producer_id]['lock']:
             self._producers[producer_id]['count'] -= 1
+
+        # Carts are not shared between threads (consumers)
+        # No race conditions here
 
         self._carts[cart_id]['store'].append(product)
 
@@ -130,12 +154,18 @@ class Marketplace:
         :param product: the product to remove from cart
         """
 
+        # Attempt to increase the product count of producer
+        # If queue is full (can't increase), inform the consumer to try again (return False)
+
         producer_id = self._product_to_producer[product]
         with self._producers[producer_id]['lock']:
             if self._producers[producer_id]['count'] == self._queue_size_per_producer:
                 return False
 
             self._producers[producer_id]['count'] += 1
+
+        # Carts are not shared between threads (consumers)
+        # no race conditions here
 
         self._carts[cart_id]['store'].remove(product)
         self._store.append(product)
