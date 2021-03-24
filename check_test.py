@@ -33,7 +33,7 @@ def main():
         for line in output_lines:
             print(line, file=sorted_output_file)
 
-    command = subprocess.Popen(["diff", sorted_output_filename, ref_filename], stdout=subprocess.PIPE)
+    command = subprocess.Popen(["diff", "--strip-trailing-cr", sorted_output_filename, ref_filename], stdout=subprocess.PIPE)
     out, err = command.communicate()
 
     if len(out) == 0:
