@@ -27,10 +27,27 @@ atomică a acestui contor.
   și producătorul acestuia. (necesar la adăgarea sau ștergerea de produse din
   coș - la adăguare trebuie scăzut contorul; la ștergere trebuie crescut)
 - Consider că este mai optim deoarece la adăguarea unui produs în coș pot profita
-  de faptul că operațiunea de `remove` este atomică în Python, iar astfel scap
+  de faptul că operațiunea de `remove` este atomică[1] în Python, iar astfel scap
   de un loc unde ar fi trebuit sa folosesc Lock pentru a sincroniza căutarea și
   ștergerea din n cozi (n = numărul de producători înregistrați).
 - Tocmai din acest motiv consider că implementarea este una eficientă.
+
+*[1] Atomicitatea operației `remove` se poate observa și examinând bytecode-ul
+generat întrucât ștergerea se face într-o singura instrucțiune bytecode (`CALL_METHOD`)*
+```commandline
+>>> import dis
+>>> def remove(list, elem):
+...     list.remove(elem)
+...
+>>> dis.dis(remove)
+  2           0 LOAD_FAST                0 (list)
+              2 LOAD_METHOD              0 (remove)
+              4 LOAD_FAST                1 (elem)
+              6 CALL_METHOD              1
+              8 POP_TOP
+             10 LOAD_CONST               0 (None)
+             12 RETURN_VALUE
+```
 
 Restul informațiilor legate de implementare sunt destul de evidente și cred că
 se înteleg ușor din cod și comentarii.
@@ -49,6 +66,7 @@ legătura cu cerința, dar au fost rezolvate rapid pe forum.
 Resurse utilizate
 -
 
+- [How to verify if one step is Atomic in Python](https://stackoverflow.com/questions/17990334/how-to-verify-if-one-step-is-atomic-operation-in-python-or-now)
 - [List remove is thread safe](https://blog.finxter.com/python-list-remove/)
 - [Thread safe operations](https://web.archive.org/web/20201108091210/http://effbot.org/pyfaq/what-kinds-of-global-value-mutation-are-thread-safe.htm)
 - [Labs](https://ocw.cs.pub.ro/courses/asc)

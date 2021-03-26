@@ -121,8 +121,7 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again
         """
 
-        # Element removal is an atomic operation apparently, so no lock is required here
-        # https://blog.finxter.com/python-list-remove/
+        # Element removal is an atomic operation, so no lock is required here
 
         try:
             self._store.remove(product)
